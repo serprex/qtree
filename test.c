@@ -7,7 +7,6 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 #define ButtonPress SDL_MOUSEBUTTONDOWN
-#define ButtonRelease SDL_MOUSEBUTTONUP
 #define MotionNotify SDL_MOUSEMOTION
 #define ClientMessage SDL_QUIT
 #define EV(y) ev.y
@@ -27,6 +26,14 @@ void qtdraw(qtree*q,uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2){
 	glBegin(GL_POINTS);
 	glVertex2i(q->x,q->y);
 	glEnd();
+	glColor3ub(32,32,32);
+	glBegin(GL_LINES);
+	for(int i=0;i<4;i++)
+		if(q->n[i]){
+			glVertex2i(q->x,q->y);
+			glVertex2i(q->n[i]->x,q->n[i]->y);
+		}
+	glEnd();
 	if(q->n[0])qtdraw(q->n[0],x1+x2>>1,y1+y2>>1,x2,y2);
 	if(q->n[1])qtdraw(q->n[1],x1+x2>>1,y1,x2,y1+y2>>1);
 	if(q->n[2])qtdraw(q->n[2],x1,y1+y2>>1,x1+x2>>1,y2);
@@ -43,7 +50,7 @@ int main(int argc,char**argv){
 	#else
 	Display*dpy=XOpenDisplay(0);
 	XVisualInfo*vi=glXChooseVisual(dpy,DefaultScreen(dpy),(int[]){GLX_RGBA,GLX_DOUBLEBUFFER,None});
-	Window Wdo=XCreateWindow(dpy,RootWindow(dpy,vi->screen),0,0,1024,1024,0,vi->depth,InputOutput,vi->visual,CWColormap|CWEventMask,(XSetWindowAttributes[]){{.colormap=XCreateColormap(dpy,RootWindow(dpy,vi->screen),vi->visual,AllocNone),.event_mask=ButtonPressMask}});
+	Window Wdo=XCreateWindow(dpy,RootWindow(dpy,vi->screen),0,0,1024,1024,0,vi->depth,InputOutput,vi->visual,CWColormap|CWEventMask,(XSetWindowAttributes[]){{.colormap=XCreateColormap(dpy,RootWindow(dpy,vi->screen),vi->visual,AllocNone),.event_mask=PointerMotionMask|ButtonPressMask}});
 	XSetWMProtocols(dpy,Wdo,(Atom[]){XInternAtom(dpy,"WM_DELETE_WINDOW",False)},1);
 	XMapWindow(dpy,Wdo);
 	glXMakeCurrent(dpy,Wdo,glXCreateContext(dpy,vi,0,GL_TRUE));
@@ -56,6 +63,19 @@ int main(int argc,char**argv){
 	for(;;){
 		glClear(GL_COLOR_BUFFER_BIT);
 		qtdraw(q,0,0,65535,65535);
+		qtree*t=qtnearxy(q,mx,my);
+		glBegin(GL_LINES);
+		glVertex2i(mx,my);
+		glVertex2i(t->x,t->y);
+		glEnd();
+		glBegin(GL_POINTS);
+		for(int i=0;i<512;i++)
+			for(int j=0;j<512;j++){
+				qtree*t=qtnearxy(q,i,j);
+				glColor3ub(t->y>>4,t->x>>4,0);
+				glVertex2i(i,j);
+			}
+		glEnd();
 		#ifdef GLX
 		glXSwapBuffers(dpy,Wdo);
 		XEvent ev;
@@ -69,10 +89,16 @@ int main(int argc,char**argv){
 			SDLKey ks;
 		#endif
 			switch(ev.type){
+			case(MotionNotify)
+				mx=EV(button.x);
+				my=EV(button.y);
 			case(ButtonPress)
 				switch(EV(button.button)){
 				case(1)qtadd(q,EV(button.x),EV(button.y));
-				case(3)qtsub(q,EV(button.x),EV(button.y));
+				case(3)
+					for(int i=-5;i<5;i++)
+						for(int j=-5;j<5;j++)
+							qtsub(q,mx+i,my+j);
 				}
 			case(ClientMessage)return 0;
 			}
