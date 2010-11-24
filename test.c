@@ -18,6 +18,7 @@
 #include "qtree.h"
 #define case(x) break;case x:;
 #define else(x) else if(x)
+#include <stdio.h>
 int mx,my;
 void qtdraw(qtree*q,uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2){
 	glColor3ub(8,12,16);
@@ -34,10 +35,11 @@ void qtdraw(qtree*q,uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2){
 			glVertex2i(q->n[i]->x,q->n[i]->y);
 		}
 	glEnd();
-	if(q->n[0])qtdraw(q->n[0],x1+x2>>1,y1+y2>>1,x2,y2);
-	if(q->n[1])qtdraw(q->n[1],x1+x2>>1,y1,x2,y1+y2>>1);
-	if(q->n[2])qtdraw(q->n[2],x1,y1+y2>>1,x1+x2>>1,y2);
-	if(q->n[3])qtdraw(q->n[3],x1,y1,x1+x2>>1,y1+y2>>1);
+	uint16_t x12=x1+x2>>1,y12=y1+y2>>1;
+	if(q->n[0])qtdraw(q->n[0],x12,y12,x2,y2);
+	if(q->n[1])qtdraw(q->n[1],x12,y1,x2,y12);
+	if(q->n[2])qtdraw(q->n[2],x1,y12,x12,y2);
+	if(q->n[3])qtdraw(q->n[3],x1,y1,x12,y12);
 }
 int main(int argc,char**argv){
 	#ifdef SDL
@@ -63,15 +65,23 @@ int main(int argc,char**argv){
 	for(;;){
 		glClear(GL_COLOR_BUFFER_BIT);
 		qtdraw(q,0,0,65535,65535);
-		qtree*t=qtnearxy(q,mx,my);
+		qtree*tn=qtnear(q,mx,my);
+		qlist*t=qtsnear(q,mx,my,64);
 		glBegin(GL_LINES);
 		glVertex2i(mx,my);
-		glVertex2i(t->x,t->y);
+		glVertex2i(tn->x,tn->y);
+		if(t){
+			for(qlist*n=t;n;n=n->n){
+				glVertex2i(mx,my);
+				glVertex2i(n->q->x,n->q->y);
+			}
+			qldel(t);
+		}
 		glEnd();
 		glBegin(GL_POINTS);
 		for(int i=0;i<512;i++)
 			for(int j=0;j<512;j++){
-				qtree*t=qtnearxy(q,i,j);
+				qtree*t=qtnear(q,i,j);
 				glColor3ub(t->y>>4,t->x>>4,0);
 				glVertex2i(i,j);
 			}
@@ -96,8 +106,8 @@ int main(int argc,char**argv){
 				switch(EV(button.button)){
 				case(1)qtadd(q,EV(button.x),EV(button.y));
 				case(3)
-					for(int i=-5;i<5;i++)
-						for(int j=-5;j<5;j++)
+					for(int i=-6;i<7;i++)
+						for(int j=-6;j<7;j++)
 							qtsub(q,mx+i,my+j);
 				}
 			case(ClientMessage)return 0;
