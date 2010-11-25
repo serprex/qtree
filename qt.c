@@ -36,8 +36,8 @@ void qtdel(qtree*q){
 		if(q->n[i])qtdel(q->n[i]);
 	free(q);
 }
-unsigned qtlen(qtree*q){
-	unsigned r=1;
+uint32_t qtlen(qtree*q){
+	uint32_t r=1;
 	for(int i=0;i<4;i++)
 		if(q->n[i])r+=qtlen(q->n[i]);
 	return r;
@@ -47,25 +47,15 @@ static qtree*qtadd_(qtree*q,uint16_t x,uint16_t y,uint16_t x1,uint16_t y1,uint16
 	uint16_t x12=x1+x2>>1,y12=y1+y2>>1;
 	if(x>x12){
 		if(y>y12){
-			if(!q->n[0]){
-				(q->n[0]=qtnew(x,y))->n[4]=q;
-				return q->n[0];
-			}else return qtadd_(q->n[0],x,y,x12,y12,x2,y2);
-		}else{
-			if(!q->n[1]){
-				(q->n[1]=qtnew(x,y))->n[4]=q;
-				return q->n[1];
-			}else return qtadd_(q->n[1],x,y,x12,y1,x2,y12);
-		}
+			if(!q->n[0])return q->n[0]=qtnew(x,y);
+			else return qtadd_(q->n[0],x,y,x12,y12,x2,y2);
+		}else if(!q->n[1])return q->n[1]=qtnew(x,y);
+		else return qtadd_(q->n[1],x,y,x12,y1,x2,y12);
 	}else if(y>y12){
-		if(!q->n[2]){
-			(q->n[2]=qtnew(x,y))->n[4]=q;
-			return q->n[2];
-		}else return qtadd_(q->n[2],x,y,x1,y12,x12,y2);
-	}else if(!q->n[3]){
-		(q->n[3]=qtnew(x,y))->n[4]=q;
-		return q->n[3];
-	}else return qtadd_(q->n[3],x,y,x1,y1,x12,y12);
+		if(!q->n[2])return q->n[2]=qtnew(x,y);
+		else return qtadd_(q->n[2],x,y,x1,y12,x12,y2);
+	}else if(!q->n[3])return q->n[3]=qtnew(x,y);
+	else return qtadd_(q->n[3],x,y,x1,y1,x12,y12);
 }
 qtree*qtadd(qtree*q,uint16_t x,uint16_t y){return qtadd_(q,x,y,0,0,65535,65535);}
 static qtree*qtget_(qtree*q,uint16_t x,uint16_t y,uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2){
@@ -78,23 +68,36 @@ static qtree*qtget_(qtree*q,uint16_t x,uint16_t y,uint16_t x1,uint16_t y1,uint16
 	else return q->n[3]?qtget_(q->n[3],x,y,x1,y1,x12,y12):0;
 }
 qtree*qtget(qtree*q,uint16_t x,uint16_t y){return qtget_(q,x,y,0,0,65535,65535);}
-void qtsubdir(qtree*q){
+static void qtsubdir(qtree*q,qtree*h){
 	for(int i=0;i<4;i++)
 		if(q->n[i]){
 			q->x=q->n[i]->x;
 			q->y=q->n[i]->y;
-			qtsubdir(q->n[i]);
+			qtsubdir(q->n[i],q);
 			return;
 		}
 	for(int i=0;i<4;i++)
-		if(q->n[4]->n[i]==q){
-			q->n[4]->n[i]=0;
+		if(h->n[i]==q){
+			h->n[i]=0;
 			free(q);
 			return;
 		}
 	__builtin_unreachable();
 }
-void qtsub(qtree*q,uint16_t x,uint16_t y){if(q=qtget(q,x,y))qtsubdir(q);}
+static void qtsub_(qtree*q,uint16_t x,uint16_t y,uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2,qtree*h){
+	if(x==q->x&&y==q->y)qtsubdir(q,h);
+	else{
+		uint16_t x12=x1+x2>>1,y12=y1+y2>>1;
+		if(x>x12){
+			if(y>y12){
+				if(q->n[0])qtsub_(q->n[0],x,y,x12,y12,x2,y2,q);
+			}else if(q->n[1])qtsub_(q->n[1],x,y,x12,y1,x2,y12,q);
+		}else if(y>y12){
+			if(q->n[2])qtsub_(q->n[2],x,y,x1,y12,x12,y2,q);
+		}else if(q->n[3])qtsub_(q->n[3],x,y,x1,y1,x12,y12,q);
+	}
+}
+void qtsub(qtree*q,uint16_t x,uint16_t y){if(x!=q->x||y!=q->y)qtsub_(q,x,y,0,0,65535,65535,0);}
 qtree*qtcpy(qtree*q){
 	qtree*n=qtnew(q->x,q->y);
 	for(int i=0;i<4;i++)
