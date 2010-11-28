@@ -2,10 +2,13 @@
 #include <GL/glx.h>
 #include <GL/glu.h>
 #include <sys/unistd.h>
+#include <sys/time.h>
+struct timeval tvx,tvy;
 #define EV(y) ev.x##y
 #else
 #include <SDL.h>
 #include <SDL_opengl.h>
+Uint32 tvx,tvy;
 #define ButtonPress SDL_MOUSEBUTTONDOWN
 #define MotionNotify SDL_MOUSEMOTION
 #define ClientMessage SDL_QUIT
@@ -57,12 +60,16 @@ int main(int argc,char**argv){
 	XMapWindow(dpy,Wdo);
 	glXMakeCurrent(dpy,Wdo,glXCreateContext(dpy,vi,0,GL_TRUE));
 	#endif
-	srand(time(0));
 	glOrtho(0,1024,1024,0,1,-1);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE,GL_ONE);
-	qtree*q=qtnew(64,64);
+	qtree*q=qtnew(0,0);
 	for(;;){
+		#ifdef GLX
+		gettimeofday(&tvx,0);
+		#else
+		tvx=SDL_GetTicks();
+		#endif
 		glClear(GL_COLOR_BUFFER_BIT);
 		qtdraw(q,0,0,65535,65535);
 		qtree*tn=qtnear(q,mx,my);
@@ -70,13 +77,11 @@ int main(int argc,char**argv){
 		glBegin(GL_LINES);
 		glVertex2i(mx,my);
 		glVertex2i(tn->x,tn->y);
-		if(t){
-			for(qlist*n=t;n;n=n->n){
-				glVertex2i(mx,my);
-				glVertex2i(n->q->x,n->q->y);
-			}
-			qldel(t);
+		for(int i=0;i<t->n;i++){
+			glVertex2i(mx,my);
+			glVertex2i(t->q[i]->x,t->q[i]->y);
 		}
+		qldel(t);
 		glEnd();
 		glBegin(GL_POINTS);
 		for(int i=0;i<512;i++)
@@ -107,11 +112,17 @@ int main(int argc,char**argv){
 				case(1)qtadd(q,EV(button.x),EV(button.y));
 				case(3)
 					for(int i=-6;i<7;i++)
-						for(int j=-6;j<7;j++)
-							qtsub(q,mx+i,my+j);
+						for(int j=-6;j<7;j++)qtsub(q,mx+i,my+j);
 				}
 			case(ClientMessage)return 0;
 			}
 		}
+		int qtl=qtlen(q);
+		#ifdef GLX
+		gettimeofday(&tvy,0);
+		#else
+		tvy=SDL_GetTicks();
+		#endif
+		fprintf(stderr,"%d %d\n",qtl,tvy.tv_usec-tvx.tv_usec);
 	}
 }

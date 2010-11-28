@@ -1,13 +1,14 @@
+#pragma once
 #include <stdint.h>
 typedef struct qtree{
 	struct qtree*n[4];
 	uint16_t x,y;
 }qtree;
 typedef struct qlist{
-	struct qlist*n;
-	qtree*q;
+	uint32_t n;
+	qtree*q[];
 }qlist;
-qlist*qlnew(qtree*);
+qlist*qlnew();
 void qldel(qlist*);
 void qladd(qlist**,qtree*);
 qtree*qtnew(uint16_t,uint16_t);
