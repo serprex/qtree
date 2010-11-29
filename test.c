@@ -77,9 +77,10 @@ int main(int argc,char**argv){
 		glBegin(GL_LINES);
 		glVertex2i(mx,my);
 		glVertex2i(tn->x,tn->y);
-		for(int i=0;i<t->n;i++){
+		qtree*tq;
+		while(tq=qlnxt(t),tq){
 			glVertex2i(mx,my);
-			glVertex2i(t->q[i]->x,t->q[i]->y);
+			glVertex2i(tq->x,tq->y);
 		}
 		qldel(t);
 		glEnd();
@@ -120,9 +121,9 @@ int main(int argc,char**argv){
 		int qtl=qtlen(q);
 		#ifdef GLX
 		gettimeofday(&tvy,0);
+		fprintf(stderr,"%d %d\n",qtl,tvy.tv_usec-tvx.tv_usec);
 		#else
 		tvy=SDL_GetTicks();
 		#endif
-		fprintf(stderr,"%d %d\n",qtl,tvy.tv_usec-tvx.tv_usec);
 	}
 }

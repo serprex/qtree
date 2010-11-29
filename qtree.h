@@ -6,11 +6,14 @@ typedef struct qtree{
 }qtree;
 typedef struct qlist{
 	uint32_t n;
+	uint32_t p;
 	qtree*q[];
 }qlist;
 qlist*qlnew();
 void qldel(qlist*);
 void qladd(qlist**,qtree*);
+void qlset(qlist*,uint32_t);
+qtree*qlnxt(qlist*);
 qtree*qtnew(uint16_t,uint16_t);
 void qtdel(qtree*);
 qtree*qtadd(qtree*,uint16_t,uint16_t);

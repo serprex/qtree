@@ -12,6 +12,21 @@ int qlin(qlist*n,qtree*q){
 		if(n->q[i]==q)return 1;
 	return 0;
 }
+void qlset(qlist*n,uint32_t i){if(i<n->n)n->p=i;}
+qtree*qlnxt(qlist*n){return n->p<n->n?n->q[n->p++]:0;}
+static void qlqt_(qtree*q,qlist*n){
+	n->q[n->p++]=q;
+	for(int i=0;i<4;i++)
+		if(q->n[i])qlqt_(q->n[i],n);
+}
+qlist*qlqt(qtree*q){
+	uint32_t ql=qtlen(q);
+	qlist*n=malloc(sizeof(qlist)+sizeof(qtree*)*ql);
+	n->n=ql;
+	qlqt_(q,n);
+	n->p=0;
+	return n;
+}
 qtree*qtnew(uint16_t x,uint16_t y){
 	qtree*r=calloc(1,sizeof(qtree));
 	r->x=x;
@@ -120,8 +135,7 @@ qtree*qtnear(qtree*q,uint16_t x,uint16_t y){
 	return q;
 }
 static void qtsnear_(qtree*q,int x,int y,int x1,int y1,int x2,int y2,uint32_t d,qlist**n){
-	uint32_t dd=sqr(x-q->x)+sqr(y-q->y);
-	if(dd<d)qladd(n,q);
+	if(sqr(x-q->x)+sqr(y-q->y)<d)qladd(n,q);
 	int x12=x1+x2>>1,y12=y1+y2>>1;
 	if(q->n[0]&&d>pttosqdi(x,y,x12,y12,x2,y2))qtsnear_(q->n[0],x,y,x12,y12,x2,y2,d,n);
 	if(q->n[1]&&d>pttosqdi(x,y,x12,y1,x2,y12))qtsnear_(q->n[1],x,y,x12,y1,x2,y12,d,n);
@@ -152,10 +166,7 @@ qtree*qtznear(qtree*q,uint16_t x,uint16_t y,qlist*l){
 	return q;
 }
 static void qtsznear_(qtree*q,int x,int y,int x1,int y1,int x2,int y2,uint32_t d,qlist**n,qlist*l){
-	if(!qlin(l,q)){
-		uint32_t dd=sqr(x-q->x)+sqr(y-q->y);
-		if(dd<d)qladd(n,q);
-	}
+	if(!qlin(l,q)&&sqr(x-q->x)+sqr(y-q->y)<d)qladd(n,q);
 	int x12=x1+x2>>1,y12=y1+y2>>1;
 	if(q->n[0]&&d>pttosqdi(x,y,x12,y12,x2,y2))qtsznear_(q->n[0],x,y,x12,y12,x2,y2,d,n,l);
 	if(q->n[1]&&d>pttosqdi(x,y,x12,y1,x2,y12))qtsznear_(q->n[1],x,y,x12,y1,x2,y12,d,n,l);
