@@ -1,10 +1,18 @@
 ifneq ($(GLX),)
-CFLAGS=-DGLX
+CF=-DGLX
 else
-CFLAGS=-DSDL `sdl-config --cflags` `sdl-config --libs`
+CF=-DSDL `sdl-config --cflags` `sdl-config --libs`
 endif
-a:qt test
-qt:qt.c
-	gcc -std=gnu99 -O2 -march=native -s -ffast-math -ftree-vectorize -o qtree.o qt.c -c
-test:test.c qt
-	gcc -std=gnu99 -O2 -march=native -s -ffast-math -fwhole-program -ftree-vectorize -o test test.c qtree.o ${CFLAGS} -lGL
+CF+=-fwhole-program -lGL -L. -lqtree
+CC=gcc -std=gnu99 -O2 -march=native -s -ffast-math -fPIC
+a:ptest rtest
+qt:rqt.o pqt.o ql.o
+	${CC} -shared -o libqtree.so pqt.o rqt.o ql.o
+ptest:ptest.c qt
+	${CC} -o ptest ptest.c ${CF}
+rtest:rtest.c qt
+	${CC} -o rtest rtest.c ${CF}
+test:ptest rtest
+	LD_LIBRARY_PATH=. ./ptest
+	LD_LIBRARY_PATH=. ./rtest
+	rm *.o

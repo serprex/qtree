@@ -18,32 +18,11 @@ Uint32 tvx,tvy;
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include "qtree.h"
+#include "rqtree.h"
 #define case(x) break;case x:;
 #define else(x) else if(x)
 #include <stdio.h>
-int mx,my;
-void qtdraw(qtree*q,uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2){
-	glColor3ub(8,12,16);
-	glRecti(x1,y1,x2,y2);
-	glColor3ub(255,255,255);
-	glBegin(GL_POINTS);
-	glVertex2i(q->x,q->y);
-	glEnd();
-	glColor3ub(32,32,32);
-	glBegin(GL_LINES);
-	for(int i=0;i<4;i++)
-		if(q->n[i]){
-			glVertex2i(q->x,q->y);
-			glVertex2i(q->n[i]->x,q->n[i]->y);
-		}
-	glEnd();
-	uint16_t x12=x1+x2>>1,y12=y1+y2>>1;
-	if(q->n[0])qtdraw(q->n[0],x12,y12,x2,y2);
-	if(q->n[1])qtdraw(q->n[1],x12,y1,x2,y12);
-	if(q->n[2])qtdraw(q->n[2],x1,y12,x12,y2);
-	if(q->n[3])qtdraw(q->n[3],x1,y1,x12,y12);
-}
+int mx,my,mxo,myo,mz;
 int main(int argc,char**argv){
 	#ifdef SDL
 	if(SDL_Init(SDL_INIT_VIDEO)==-1){
@@ -63,7 +42,7 @@ int main(int argc,char**argv){
 	glOrtho(0,1024,1024,0,1,-1);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE,GL_ONE);
-	qtree*q=qtnew(0,0);
+	rqtree*q=rqtnew();
 	for(;;){
 		#ifdef GLX
 		gettimeofday(&tvx,0);
@@ -71,27 +50,6 @@ int main(int argc,char**argv){
 		tvx=SDL_GetTicks();
 		#endif
 		glClear(GL_COLOR_BUFFER_BIT);
-		qtdraw(q,0,0,65535,65535);
-		qtree*tn=qtnear(q,mx,my);
-		qlist*t=qtsnear(q,mx,my,64);
-		glBegin(GL_LINES);
-		glVertex2i(mx,my);
-		glVertex2i(tn->x,tn->y);
-		qtree*tq;
-		while(tq=qlnxt(t),tq){
-			glVertex2i(mx,my);
-			glVertex2i(tq->x,tq->y);
-		}
-		qldel(t);
-		glEnd();
-		glBegin(GL_POINTS);
-		for(int i=0;i<512;i++)
-			for(int j=0;j<512;j++){
-				qtree*t=qtnear(q,i,j);
-				glColor3ub(t->y>>4,t->x>>4,0);
-				glVertex2i(i,j);
-			}
-		glEnd();
 		#ifdef GLX
 		glXSwapBuffers(dpy,Wdo);
 		XEvent ev;
@@ -110,18 +68,20 @@ int main(int argc,char**argv){
 				my=EV(button.y);
 			case(ButtonPress)
 				switch(EV(button.button)){
-				case(1)qtadd(q,EV(button.x),EV(button.y));
-				case(3)
-					for(int i=-6;i<7;i++)
-						for(int j=-6;j<7;j++)qtsub(q,mx+i,my+j);
+				case(1)
+					if(mz=!mz){
+						mxo=mx;
+						myo=my;
+					}else rqtadd(q,mx,my,mxo,myo);
+				case(3)rqtsubp(q,mx,my);
 				}
 			case(ClientMessage)return 0;
 			}
 		}
-		int qtl=qtlen(q);
+		int qtl=rqtlen(q);
 		#ifdef GLX
 		gettimeofday(&tvy,0);
-		fprintf(stderr,"%d %d\n",qtl,tvy.tv_usec-tvx.tv_usec);
+		fprintf(stderr,"%d %d %d\n",qtl,tvy.tv_usec-tvx.tv_usec,tvy.tv_sec-tvx.tv_sec);
 		#else
 		tvy=SDL_GetTicks();
 		#endif
