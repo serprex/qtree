@@ -8,7 +8,6 @@ struct timeval tvx,tvy;
 #else
 #include <SDL.h>
 #include <SDL_opengl.h>
-Uint32 tvx,tvy;
 #define ButtonPress SDL_MOUSEBUTTONDOWN
 #define MotionNotify SDL_MOUSEMOTION
 #define ClientMessage SDL_QUIT
@@ -46,8 +45,6 @@ int main(int argc,char**argv){
 	for(;;){
 		#ifdef GLX
 		gettimeofday(&tvx,0);
-		#else
-		tvx=SDL_GetTicks();
 		#endif
 		glClear(GL_COLOR_BUFFER_BIT);
 		#ifdef GLX
@@ -82,8 +79,6 @@ int main(int argc,char**argv){
 		#ifdef GLX
 		gettimeofday(&tvy,0);
 		fprintf(stderr,"%d %d %d\n",qtl,tvy.tv_usec-tvx.tv_usec,tvy.tv_sec-tvx.tv_sec);
-		#else
-		tvy=SDL_GetTicks();
 		#endif
 	}
 }
