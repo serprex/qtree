@@ -1,7 +1,7 @@
 ifneq ($(GLX),)
 CF=-DGLX -lX11
 else
-CF=-DSDL `sdl-config --cflags` `sdl-config --libs`
+CF=-DSDL `sdl2-config --cflags` `sdl2-config --libs`
 endif
 CF+=-fwhole-program -lGL -L. -lqtree
 CFLAGS=-std=gnu99 -O2 -march=native -s -ffast-math -fPIC
